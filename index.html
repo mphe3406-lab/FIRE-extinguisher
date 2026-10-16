@@ -3,1383 +3,689 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจเช็คถังดับเพลิง - โรงพยาบาลหนองสองห้อง (FM-ENV-FIRE-01)</title>
-    <!-- Tailwind CSS -->
+    <title>ระบบตรวจเช็คถังดับเพลิง รพ.หนองสองห้อง</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Font Inter & Sarabun -->
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Sarabun', 'sans-serif'],
-                    },
-                    colors: {
-                        hospital: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                            900: '#14532d',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Sarabun', sans-serif; }
-        .btn-choice-active-pass { background-color: #16a34a !important; color: white !important; border-color: #16a34a !important; }
-        .btn-choice-active-fail { background-color: #dc2626 !important; color: white !important; border-color: #dc2626 !important; }
-        .btn-choice-active-na { background-color: #4b5563 !important; color: white !important; border-color: #4b5563 !important; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-[#fdf8f8] text-slate-800 antialiased min-h-screen">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <nav class="bg-rose-800/95 backdrop-blur-md text-white shadow-lg sticky top-0 z-40 border-b border-rose-700/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-red-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
-                        <i data-lucide="flame" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-lg text-slate-900 leading-tight">โรงพยาบาลหนองสองห้อง</h1>
-                        <p class="text-xs text-slate-500">แบบฟอร์มตรวจเช็คถังดับเพลิงประจำจุด (FM-ENV-FIRE-01)</p>
-                    </div>
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <i data-lucide="flame" class="w-7 h-7 mr-2 text-rose-200"></i>
+                    <span class="font-bold text-lg hidden sm:block tracking-wide">รพ.หนองสองห้อง | ตรวจถังดับเพลิง</span>
+                    <span class="font-bold text-lg sm:hidden tracking-wide">รพ.หนองสองห้อง</span>
                 </div>
-                
-                <!-- Desktop Navigation -->
-                <nav class="hidden md:flex space-x-1 bg-slate-100 p-1 rounded-xl text-sm font-medium">
-                    <button onclick="switchTab('form')" id="tab-btn-form" class="px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 bg-white text-slate-900 shadow-sm">
-                        <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                        <span>บันทึกตรวจเช็ค</span>
-                    </button>
-                    <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-                        <span>Dashboard สรุปผล</span>
-                    </button>
-                    <button onclick="switchTab('admin')" id="tab-btn-admin" class="px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-                        <i data-lucide="database" class="w-4 h-4"></i>
-                        <span>จัดการข้อมูล (Admin)</span>
-                    </button>
-                    <button onclick="switchTab('gas')" id="tab-btn-gas" class="px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-                        <i data-lucide="code" class="w-4 h-4"></i>
-                        <span>เชื่อมต่อ GAS</span>
-                    </button>
-                </nav>
-
-                <!-- System Status Indicator -->
-                <div class="flex items-center space-x-2">
-                    <span id="sync-status" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Ready (Local/GAS)
-                    </span>
+                <div class="flex space-x-1 sm:space-x-2">
+                    <button onclick="switchTab('form')" id="nav-form" class="px-3 py-2 rounded-lg text-sm font-medium bg-rose-900 transition shadow-inner">ฟอร์ม</button>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-rose-700/60 transition">แดชบอร์ด</button>
+                    <button onclick="switchTab('admin')" id="nav-admin" class="px-3 py-2 rounded-lg text-sm font-medium hover:bg-rose-700/60 transition">แอดมิน</button>
                 </div>
             </div>
         </div>
+    </nav>
 
-        <!-- Mobile Navigation Bar -->
-        <div class="md:hidden flex border-t border-slate-200 bg-white">
-            <button onclick="switchTab('form')" id="mob-tab-form" class="flex-1 py-3 text-center text-xs font-medium text-emerald-600 border-b-2 border-emerald-600">
-                <i data-lucide="clipboard-check" class="w-5 h-5 mx-auto mb-1"></i> ตรวจเช็ค
-            </button>
-            <button onclick="switchTab('dashboard')" id="mob-tab-dashboard" class="flex-1 py-3 text-center text-xs font-medium text-slate-500">
-                <i data-lucide="bar-chart-3" class="w-5 h-5 mx-auto mb-1"></i> Dashboard
-            </button>
-            <button onclick="switchTab('admin')" id="mob-tab-admin" class="flex-1 py-3 text-center text-xs font-medium text-slate-500">
-                <i data-lucide="database" class="w-5 h-5 mx-auto mb-1"></i> ประวัติ/Admin
-            </button>
-            <button onclick="switchTab('gas')" id="mob-tab-gas" class="flex-1 py-3 text-center text-xs font-medium text-slate-500">
-                <i data-lucide="code" class="w-5 h-5 mx-auto mb-1"></i> GAS
-            </button>
-        </div>
-    </header>
+    <main class="max-w-4xl mx-auto p-4 py-6 sm:py-8">
+        
+        <!-- Tab: Form -->
+        <div id="tab-form" class="block animate-fade-in">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-rose-900">แบบฟอร์มตรวจเช็คถังดับเพลิงประจำจุด</h1>
+                <p class="text-rose-600/80 text-sm mt-1 font-medium">รหัส: FM-ENV-FIRE-01</p>
+            </div>
 
-    <!-- Main Content Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-
-        <!-- ==================== TAB 1: FORM SECTION ==================== -->
-        <div id="section-form" class="space-y-6">
-            <form id="inspection-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+            <form id="fire-inspection-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
                 
-                <!-- Card 1: Extinguisher Metadata -->
-                <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
-                        <div class="flex items-center space-x-3">
-                            <span class="bg-slate-100 text-slate-700 p-2 rounded-lg"><i data-lucide="info" class="w-5 h-5"></i></span>
-                            <div>
-                                <h2 class="text-base font-bold text-slate-900">ข้อมูลประจำถังและจุดติดตั้ง</h2>
-                                <p class="text-xs text-slate-500">กรอกข้อมูลครุภัณฑ์เพื่อเริ่มการตรวจเช็ค</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-600">Rev. 00</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- ข้อมูลประจำถัง -->
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-5 sm:p-6">
+                    <h2 class="text-lg font-bold text-rose-900 mb-4 flex items-center border-b border-rose-50 pb-3">
+                        <i data-lucide="info" class="w-5 h-5 mr-2 text-rose-600"></i> ข้อมูลประจำถัง
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">รหัสถัง / ครุภัณฑ์ <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input type="text" id="asset_id" required placeholder="เช่น FE-OPD-01" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none uppercase font-semibold">
-                                <button type="button" onclick="quickFillAsset('FE-OPD-01')" class="absolute right-2 top-2 text-xs text-emerald-600 hover:underline">ตัวอย่าง</button>
-                            </div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">รหัสถัง/ครุภัณฑ์ *</label>
+                            <input type="text" id="asset_id" required class="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition" placeholder="ระบุรหัส">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">หน่วยงาน <span class="text-red-500">*</span></label>
-                            <input type="text" id="department" required placeholder="เช่น ผู้ป่วยนอก (OPD)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">หน่วยงาน *</label>
+                            <input type="text" id="department" required class="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition" placeholder="เช่น OPD, ER">
                         </div>
                         <div class="sm:col-span-2">
-                            <label class="block text-xs font-medium text-slate-700 mb-1">จุดติดตั้ง / อาคาร / ชั้น <span class="text-red-500">*</span></label>
-                            <input type="text" id="location" required placeholder="เช่น อาคารผู้ป่วยนอก ชั้น 1 หน้าห้องตรวจ 2" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">จุดติดตั้ง/อาคาร/ชั้น *</label>
+                            <select id="location" required class="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition bg-white">
+                                <option value="">-- กรุณาเลือกจุดติดตั้ง --</option>
+                                <option value="หอผู้ป่วยในหญิง">หอผู้ป่วยในหญิง</option>
+                                <option value="เอกซเรย์">เอกซเรย์</option>
+                                <option value="ไตเทียม ชั้น5">ไตเทียม ชั้น5</option>
+                                <option value="ห้องถ่ายภาพประสาทตา">ห้องถ่ายภาพประสาทตา</option>
+                                <option value="งานสุขาภิบาลและป้องกันโรค">งานสุขาภิบาลและป้องกันโรค</option>
+                                <option value="อาคาร2ชั้นห้องคลอด">อาคาร2ชั้นห้องคลอด</option>
+                                <option value="ห้องโถงผู้ป่วยเก่าอาคาร 2 ชั้น">ห้องโถงผู้ป่วยเก่าอาคาร 2 ชั้น</option>
+                                <option value="ห้องพขร">ห้องพขร</option>
+                                <option value="ป้อม รปภ">ป้อม รปภ</option>
+                                <option value="หน้าห้องER">หน้าห้องER</option>
+                                <option value="เวชระเบียน">เวชระเบียน</option>
+                                <option value="ห้องจ่ายยา">ห้องจ่ายยา</option>
+                                <option value="หน้าห้องน้ำชาย ห้องจ่ายยา">หน้าห้องน้ำชาย ห้องจ่ายยา</option>
+                                <option value="ห้องXRay">ห้องXRay</option>
+                                <option value="กลุ่มงานเทคนิคการแพทย์หน้าห้องเปลี่ยนเสื้อผ้าข้างห้อง XRay">กลุ่มงานเทคนิคการแพทย์หน้าห้องเปลี่ยนเสื้อผ้าข้างห้อง XRay</option>
+                                <option value="ด้านหลังห้องเครื่องมือแพทย์">ด้านหลังห้องเครื่องมือแพทย์</option>
+                                <option value="ห้องER">ห้องER</option>
+                                <option value="งานทันตกรรม">งานทันตกรรม</option>
+                                <option value="หน้าห้องพักทันตแพทย์">หน้าห้องพักทันตแพทย์</option>
+                                <option value="แผนกผู้ป่วยนอก">แผนกผู้ป่วยนอก</option>
+                                <option value="จุดบัตรนัดใบส่งตัว">จุดบัตรนัดใบส่งตัว</option>
+                                <option value="ผู้ป่วยนอก">ผู้ป่วยนอก</option>
+                                <option value="หอผู้ป่วยในชาย">หอผู้ป่วยในชาย</option>
+                                <option value="หน้าหอผู้ป่วยในชาย">หน้าหอผู้ป่วยในชาย</option>
+                                <option value="ผู้ป่วยในชาย">ผู้ป่วยในชาย</option>
+                                <option value="ผู้ป่วยในหญิง">ผู้ป่วยในหญิง</option>
+                                <option value="ห้องพิเศษ403">ห้องพิเศษ403</option>
+                                <option value="หน้าห้องประชุม">หน้าห้องประชุม</option>
+                                <option value="ห้องประชุมชยานันโท">ห้องประชุมชยานันโท</option>
+                                <option value="กลุ่มงานบริหารทั่วไป">กลุ่มงานบริหารทั่วไป</option>
+                                <option value="โซนบ้านพัก">โซนบ้านพัก</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วัน/เดือน/ปี ผลิต</label>
+                            <input type="date" id="mfg_date" class="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition">
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">ประเภทถัง <span class="text-red-500">*</span></label>
-                            <select id="extinguisher_type" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วัน/เดือน/ปี หมดอายุ</label>
+                            <input type="date" id="exp_date" class="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทถัง</label>
+                            <select id="extinguisher_type" class="w-full p-2.5 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition">
                                 <option value="ผงเคมีแห้ง ABC">ผงเคมีแห้ง ABC</option>
-                                <option value="CO₂">CO₂ (คาร์บอนไดออกไซด์)</option>
-                                <option value="Clean Agent">Clean Agent (สารสะอาด)</option>
-                                <option value="น้ำ/โฟม">น้ำ / โฟม</option>
-                                <option value="Wet Chemical">Wet Chemical (Class K)</option>
-                                <option value="อื่น ๆ">อื่น ๆ</option>
+                                <option value="CO2">CO₂</option>
+                                <option value="Clean Agent">Clean Agent</option>
+                                <option value="น้ำ/โฟม">น้ำ/โฟม</option>
+                                <option value="อื่นๆ">อื่นๆ</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">ขนาด / ความจุ</label>
-                            <input type="text" id="capacity" placeholder="เช่น 10 ปอนด์, 15 ปอนด์" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">ประเภทเพลิงที่รองรับ</label>
-                            <div class="flex items-center space-x-2 pt-2">
-                                <label class="inline-flex items-center text-xs"><input type="checkbox" name="fire_class" value="A" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span class="ml-1">A</span></label>
-                                <label class="inline-flex items-center text-xs"><input type="checkbox" name="fire_class" value="B" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span class="ml-1">B</span></label>
-                                <label class="inline-flex items-center text-xs"><input type="checkbox" name="fire_class" value="C" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span class="ml-1">C</span></label>
-                                <label class="inline-flex items-center text-xs"><input type="checkbox" name="fire_class" value="D" class="rounded text-emerald-600 focus:ring-emerald-500"> <span class="ml-1">D</span></label>
-                                <label class="inline-flex items-center text-xs"><input type="checkbox" name="fire_class" value="K" class="rounded text-emerald-600 focus:ring-emerald-500"> <span class="ml-1">K</span></label>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">กำหนดบำรุง/ทดสอบถัดไป</label>
-                            <input type="date" id="next_test_date" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ขนาด/ความจุ (ปอนด์/กิโลกรัม)</label>
+                            <input type="text" id="capacity" class="w-full p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition" placeholder="เช่น 10 ปอนด์">
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 2: Section Selection & Mode Switch -->
-                <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-4 border-b border-slate-100">
-                        <div>
-                            <h2 class="text-base font-bold text-slate-900">รอบการตรวจและรายการตรวจสอบ (Checklist)</h2>
-                            <p class="text-xs text-slate-500">เลือกรอบการตรวจและกดปุ่มผลการประเมินได้อย่างรวดเร็ว</p>
-                        </div>
-                        <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-medium">
-                            <button type="button" onclick="setFormCycle('weekly')" id="cycle-btn-weekly" class="px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold">ตรวจรายสัปดาห์ (Quick Check)</button>
-                            <button type="button" onclick="setFormCycle('monthly')" id="cycle-btn-monthly" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">ตรวจรายเดือน (M01-M12)</button>
-                            <button type="button" onclick="setFormCycle('quarterly')" id="cycle-btn-quarterly" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900">รายไตรมาส/ปี</button>
-                        </div>
+                <!-- รายการตรวจเช็ค (Checklist) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-5 sm:p-6">
+                    <div class="flex justify-between items-center border-b border-rose-50 pb-3 mb-4">
+                        <h2 class="text-lg font-bold text-rose-900 flex items-center">
+                            <i data-lucide="check-square" class="w-5 h-5 mr-2 text-rose-600"></i> รายการตรวจสอบ
+                        </h2>
+                        <select id="inspect_period" onchange="switchChecklistBySelect(this.value)" class="text-sm border border-rose-200 rounded-lg p-1.5 bg-rose-50 text-rose-800 font-semibold outline-none focus:ring-2 focus:ring-rose-400">
+                            <option value="รายสัปดาห์">A. ตรวจรายสัปดาห์</option>
+                            <option value="รายเดือน">B. ตรวจรายเดือน</option>
+                        </select>
                     </div>
 
-                    <!-- Meta details for check -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">วันที่ทำการตรวจ <span class="text-red-500">*</span></label>
-                            <input type="date" id="inspect_date" required class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">เดือน / สัปดาห์</label>
-                            <select id="inspect_period" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
-                                <option value="มกราคม">มกราคม</option>
-                                <option value="กุมภาพันธ์">กุมภาพันธ์</option>
-                                <option value="มีนาคม">มีนาคม</option>
-                                <option value="เมษายน">เมษายน</option>
-                                <option value="พฤษภาคม">พฤษภาคม</option>
-                                <option value="มิถุนายน">มิถุนายน</option>
-                                <option value="กรกฎาคม">กรกฎาคม</option>
-                                <option value="สิงหาคม">สิงหาคม</option>
-                                <option value="กันยายน">กันยายน</option>
-                                <option value="ตารางช่วงตุลาคม">ตุลาคม</option>
-                                <option value="พฤศจิกายน">พฤศจิกายน</option>
-                                <option value="ธันวาคม">ธันวาคม</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อผู้ตรวจ / ลายมือชื่อย่อ <span class="text-red-500">*</span></label>
-                            <input type="text" id="inspector_name" required placeholder="ระบุชื่อผู้ตรวจ" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500">
-                        </div>
+                    <!-- รายสัปดาห์ (ขึ้นก่อน) -->
+                    <div id="checklist-weekly-container" class="space-y-4">
+                        <p class="text-xs text-rose-500/70 italic mb-2">Quick Visual Check 30–60 วินาที</p>
+                        <div id="checklist-weekly-items"></div>
                     </div>
 
-                    <!-- SUB-VIEW 1: Weekly Quick Check Section -->
-                    <div id="checklist-weekly" class="space-y-4">
-                        <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-800">
-                            <strong>Quick Visual Check (30-60 วินาที):</strong> สำหรับลงผลรายสัปดาห์ในรอบ 5 สัปดาห์
-                        </div>
-                        <div id="weekly-items-container" class="space-y-2">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW 2: Detailed Monthly Checklist (M01 - M12) -->
-                    <div id="checklist-monthly" class="hidden space-y-3">
-                        <div class="flex justify-between items-center text-xs text-slate-500 px-2 font-semibold">
-                            <span>รายการตรวจเช็ครายเดือน (Detailed Inspection M01-M12)</span>
-                            <div class="space-x-2">
-                                <button type="button" onclick="setAllChecklist('PASS')" class="text-emerald-600 hover:underline">เลือก "ผ่าน" ทั้งหมด</button> | 
-                                <button type="button" onclick="setAllChecklist('RESET')" class="text-slate-500 hover:underline">รีเซ็ต</button>
-                            </div>
-                        </div>
-
-                        <!-- M01 - M12 Items Generator Target -->
-                        <div id="monthly-items-container" class="space-y-2">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <!-- SUB-VIEW 3: Quarterly & Annual Check Section -->
-                    <div id="checklist-quarterly" class="hidden space-y-4">
-                        <div class="border-b pb-2">
-                            <h3 class="font-bold text-sm text-slate-800">C. ตรวจรายไตรมาส (Q01-Q06) โดยหัวหน้าหน่วย/ผู้กำกับระบบ</h3>
-                            <div id="quarterly-items-container" class="mt-2 space-y-2"></div>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-sm text-slate-800">D. ตรวจ/บำรุงรักษารายปี (A01-A06) โดยผู้เชี่ยวชาญ/ผู้ให้บริการ</h3>
-                            <div id="annual-items-container" class="mt-2 space-y-2"></div>
-                        </div>
+                    <!-- รายเดือน (ซ่อนเป็นค่าเริ่มต้น) -->
+                    <div id="checklist-monthly-container" class="space-y-4 hidden">
+                        <p class="text-xs text-rose-500/70 italic mb-2">Detailed Inspection ตรวจละเอียดประจำเดือน</p>
+                        <div id="checklist-monthly-items"></div>
                     </div>
                 </div>
 
-                <!-- Card 3: Defect & Corrective Action Record (CAR - Section E) -->
-                <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex items-center space-x-3 pb-3 border-b border-slate-100 mb-4">
-                        <span class="bg-red-50 text-red-600 p-2 rounded-lg"><i data-lucide="alert-triangle" class="w-5 h-5"></i></span>
+                <!-- ผลการประเมินและการจัดการ -->
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-5 sm:p-6">
+                    <h2 class="text-lg font-bold text-rose-900 mb-4 flex items-center border-b border-rose-50 pb-3">
+                        <i data-lucide="clipboard-check" class="w-5 h-5 mr-2 text-rose-600"></i> สรุปผลการประเมิน
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <h2 class="text-base font-bold text-slate-900">E. บันทึกข้อบกพร่องและการแก้ไข (CAR Record)</h2>
-                            <p class="text-xs text-slate-500">หากพบรายการ "ไม่ผ่าน" ระบบจะบันทึกสร้าง CAR ให้อัตโนมัติ</p>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ตรวจ</label>
+                            <input type="date" id="inspect_date" required class="w-full p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition">
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-xs font-medium text-slate-700 mb-1">ระดับความรุนแรงข้อบกพร่อง</label>
-                            <select id="defect_severity" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
-                                <option value="ปกติ">ปกติ (ไม่มีข้อบกพร่อง)</option>
-                                <option value="ทั่วไป">ทั่วไป (ไม่กระทบการใช้ทันที แต่นัดซ่อม)</option>
-                                <option value="เร่งด่วน">เร่งด่วน (กระทบความพร้อมใช้ เปลี่ยน/ทดแทนทันที)</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ผู้ตรวจ (ชื่อย่อ/ชื่อเต็ม)</label>
+                            <input type="text" id="inspector_name" required class="w-full p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะภาพรวม</label>
+                            <select id="overall_status" class="w-full p-2.5 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 font-semibold text-rose-800 transition">
+                                <option value="ผ่าน">✅ ผ่าน (พร้อมใช้งาน)</option>
+                                <option value="ไม่ผ่าน">❌ ไม่ผ่าน (พบข้อบกพร่อง)</option>
                             </select>
                         </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-medium text-slate-700 mb-1">รายละเอียดข้อบกพร่อง / การดำเนินการแก้ไข</label>
-                            <input type="text" id="defect_details" placeholder="ระบุรายละเอียด เช่น สายฉีดแตกร้าว, แรงดันตก, สลักหลุด..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ระดับข้อบกพร่อง (ถ้ามี)</label>
+                            <select id="defect_severity" class="w-full p-2.5 border border-gray-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition">
+                                <option value="ไม่มี">ไม่มี</option>
+                                <option value="ทั่วไป">ทั่วไป (รอรอบได้)</option>
+                                <option value="เร่งด่วน">เร่งด่วน (ต้องแก้ไขทันที)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียดข้อบกพร่อง / การดำเนินการแก้ไข (CAR)</label>
+                            <textarea id="defect_details" rows="2" class="w-full p-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition" placeholder="ระบุสิ่งที่พบและการแก้ไข..."></textarea>
                         </div>
                     </div>
-                </div>
 
-                <!-- Form Action Buttons -->
-                <div class="flex flex-col sm:flex-row justify-end items-center gap-3">
-                    <button type="button" onclick="resetForm()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-medium transition-all">
-                        ล้างข้อมูลแบบฟอร์ม
-                    </button>
-                    <button type="submit" class="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2">
-                        <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>บันทึกข้อมูลการตรวจเช็ค</span>
+                    <button type="submit" id="btn-submit" class="w-full mt-2 bg-gradient-to-r from-rose-600 to-red-500 text-white font-bold py-3.5 px-4 rounded-xl hover:shadow-lg hover:shadow-rose-500/30 hover:from-rose-700 hover:to-red-600 transition-all duration-300 flex justify-center items-center">
+                        <i data-lucide="save" class="w-5 h-5 mr-2"></i> บันทึกข้อมูลการตรวจเช็ค
                     </button>
                 </div>
             </form>
         </div>
 
-        <!-- ==================== TAB 2: DASHBOARD SECTION ==================== -->
-        <div id="section-dashboard" class="hidden space-y-6">
-            
-            <!-- Dashboard KPI Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-xs font-medium text-emerald-600/80">จำนวนการตรวจทั้งหมด</p>
-                        <h3 id="stat-total-inspections" class="text-3xl font-bold text-emerald-800 mt-1">0</h3>
-                        <p class="text-[10px] text-emerald-500 mt-1">อัปเดตล่าสุดวันนี้</p>
-                    </div>
-                    <div class="bg-white text-emerald-500 p-3.5 rounded-xl shadow-sm border border-emerald-50">
-                        <i data-lucide="clipboard-list" class="w-6 h-6"></i>
-                    </div>
+        <!-- Tab: Dashboard -->
+        <div id="tab-dashboard" class="hidden animate-fade-in max-w-7xl mx-auto">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-rose-900">แดชบอร์ดสรุปผล (Dashboard)</h1>
+                    <p class="text-rose-600/80 text-sm mt-1 font-medium">วิเคราะห์ข้อมูลความพร้อมของอุปกรณ์ดับเพลิง</p>
                 </div>
-
-                <div class="bg-teal-50/50 p-5 rounded-2xl border border-teal-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-xs font-medium text-teal-600/80">อัตราถังพร้อมใช้งาน (Pass)</p>
-                        <h3 id="stat-pass-rate" class="text-3xl font-bold text-teal-700 mt-1">0%</h3>
-                        <p class="text-[10px] text-teal-500 mt-1">เกณฑ์ผ่านมาตรฐาน</p>
-                    </div>
-                    <div class="bg-white text-teal-500 p-3.5 rounded-xl shadow-sm border border-teal-50">
-                        <i data-lucide="check-circle-2" class="w-6 h-6"></i>
-                    </div>
-                </div>
-
-                <div class="bg-red-50/50 p-5 rounded-2xl border border-red-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-xs font-medium text-red-500/80">ข้อบกพร่องเร่งด่วน (Urgent)</p>
-                        <h3 id="stat-urgent-cars" class="text-3xl font-bold text-red-600 mt-1">0</h3>
-                        <p class="text-[10px] text-red-400 mt-1">ต้องเปลี่ยน/แก้ไขทันที</p>
-                    </div>
-                    <div class="bg-white text-red-500 p-3.5 rounded-xl shadow-sm border border-red-50">
-                        <i data-lucide="alert-octagon" class="w-6 h-6"></i>
-                    </div>
-                </div>
-
-                <div class="bg-amber-50/50 p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-                    <div>
-                        <p class="text-xs font-medium text-amber-600/80">ข้อมูลไม่ครบถ้วน (Missing)</p>
-                        <h3 id="stat-missing-count" class="text-3xl font-bold text-amber-700 mt-1">0</h3>
-                        <p class="text-[10px] text-amber-500 mt-1">รอ Admin เติมค่า</p>
-                    </div>
-                    <div class="bg-white text-amber-500 p-3.5 rounded-xl shadow-sm border border-amber-50">
-                        <i data-lucide="file-question" class="w-6 h-6"></i>
-                    </div>
+                <div class="text-right">
+                    <div id="sync-status" class="text-xs text-gray-500 mb-1"><span class="w-2 h-2 mr-1.5 bg-yellow-400 rounded-full inline-block"></span> กำลังซิงค์...</div>
+                    <button onclick="fetchSheetData()" class="px-3 py-1.5 bg-white border border-rose-200 text-rose-700 rounded-lg hover:bg-rose-50 text-sm font-medium transition shadow-sm flex items-center">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-1.5"></i> ซิงค์ล่าสุด
+                    </button>
                 </div>
             </div>
 
-            <!-- Charts Section Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Chart 1: Inspection Status Distribution -->
-                <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden">
-                    <!-- Decorative background blob -->
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-50 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
-                    
-                    <h3 class="text-sm font-bold text-emerald-900 mb-4 flex items-center relative z-10">
-                        <div class="bg-emerald-100 p-1.5 rounded-lg mr-2 text-emerald-600">
-                            <i data-lucide="pie-chart" class="w-4 h-4"></i>
-                        </div>
-                        สัดส่วนผลการตรวจเช็คสภาพถัง
-                    </h3>
-                    <div class="h-64 relative flex items-center justify-center z-10">
+            <!-- KPI Cards - Dark Pastel Red/Semantic Theme -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-200 rounded-full blur-xl group-hover:scale-150 transition-transform opacity-50"></div>
+                    <div class="flex items-center mb-2">
+                        <div class="bg-white p-2 rounded-lg text-rose-700 shadow-sm border border-rose-100 mr-3 z-10"><i data-lucide="clipboard-list" class="w-5 h-5"></i></div>
+                        <p class="text-sm font-medium text-gray-600 z-10">ตรวจทั้งหมด</p>
+                    </div>
+                    <h3 class="text-3xl font-bold text-rose-900 z-10 relative" id="kpi-total">0</h3>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-emerald-200 rounded-full blur-xl group-hover:scale-150 transition-transform opacity-50"></div>
+                    <div class="flex items-center mb-2">
+                        <div class="bg-white p-2 rounded-lg text-emerald-600 shadow-sm border border-emerald-100 mr-3 z-10"><i data-lucide="check-circle-2" class="w-5 h-5"></i></div>
+                        <p class="text-sm font-medium text-gray-600 z-10">พร้อมใช้งาน</p>
+                    </div>
+                    <h3 class="text-3xl font-bold text-emerald-800 z-10 relative" id="kpi-ready">0</h3>
+                </div>
+                <div class="bg-red-50 border border-red-100 rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-red-200 rounded-full blur-xl group-hover:scale-150 transition-transform opacity-50"></div>
+                    <div class="flex items-center mb-2">
+                        <div class="bg-white p-2 rounded-lg text-red-600 shadow-sm border border-red-100 mr-3 z-10"><i data-lucide="alert-triangle" class="w-5 h-5"></i></div>
+                        <p class="text-sm font-medium text-gray-600 z-10">พบข้อบกพร่อง</p>
+                    </div>
+                    <h3 class="text-3xl font-bold text-red-900 z-10 relative" id="kpi-defective">0</h3>
+                </div>
+                <div class="bg-amber-50 border border-amber-100 rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-amber-200 rounded-full blur-xl group-hover:scale-150 transition-transform opacity-50"></div>
+                    <div class="flex items-center mb-2">
+                        <div class="bg-white p-2 rounded-lg text-amber-600 shadow-sm border border-amber-100 mr-3 z-10"><i data-lucide="file-question" class="w-5 h-5"></i></div>
+                        <p class="text-sm font-medium text-gray-600 z-10">ข้อมูลไม่ครบ</p>
+                    </div>
+                    <h3 class="text-3xl font-bold text-amber-800 z-10 relative" id="kpi-missing">0</h3>
+                </div>
+            </div>
+
+            <!-- Charts Container -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-5 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+                    <h3 class="text-lg font-bold text-rose-900 mb-4 relative z-10 text-center">สัดส่วนสถานะความพร้อม</h3>
+                    <div class="h-64 relative z-10">
                         <canvas id="chartStatus"></canvas>
                     </div>
                 </div>
-
-                <!-- Chart 2: Extinguishers by Type -->
-                <div class="bg-white p-5 rounded-2xl border border-teal-100 shadow-sm relative overflow-hidden">
-                     <!-- Decorative background blob -->
-                    <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-teal-50 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
-
-                    <h3 class="text-sm font-bold text-teal-900 mb-4 flex items-center relative z-10">
-                        <div class="bg-teal-100 p-1.5 rounded-lg mr-2 text-teal-600">
-                            <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
-                        </div>
-                        สถิติจำนวนถังดับเพลิงแบ่งตามประเภท
-                    </h3>
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 p-5 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-red-50 to-transparent rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+                    <h3 class="text-lg font-bold text-rose-800 mb-4 relative z-10 text-center">จำนวนถังแบ่งตามประเภท</h3>
                     <div class="h-64 relative z-10">
                         <canvas id="chartTypes"></canvas>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Summary Table of High Risk / CAR Pending -->
-            <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden">
-                <div class="p-5 border-b border-emerald-50 flex justify-between items-center bg-gradient-to-r from-emerald-50/50 to-transparent">
-                    <div>
-                        <h3 class="text-sm font-bold text-emerald-900">รายการข้อบกพร่องที่ต้องติดตาม (CAR Follow-up)</h3>
-                        <p class="text-xs text-emerald-600/70 mt-0.5">แสดงถังดับเพลิงที่ไม่ผ่านเกณฑ์การตรวจ</p>
+        <!-- Tab: Admin -->
+        <div id="tab-admin" class="hidden animate-fade-in max-w-7xl mx-auto">
+            <div id="admin-login-box" class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-rose-100 p-8 mt-10">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-50 text-rose-600 mb-4 border border-rose-100">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
                     </div>
-                    <span class="text-[10px] bg-red-100/80 text-red-700 px-3 py-1 rounded-full font-semibold border border-red-200">ต้องดำเนินการแก้ไข</span>
+                    <h2 class="text-2xl font-bold text-rose-900">ระบบผู้ดูแล (Admin)</h2>
+                    <p class="text-gray-500 text-sm mt-2">กรุณาเข้าสู่ระบบเพื่อจัดการข้อมูล</p>
                 </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left text-xs text-slate-600">
-                        <thead class="bg-emerald-50/30 text-emerald-800 uppercase border-b border-emerald-100/50 text-[10px] font-semibold tracking-wider">
-                            <tr>
-                                <th class="p-4">วันที่ตรวจ</th>
-                                <th class="p-4">รหัสถัง</th>
-                                <th class="p-4">หน่วยงาน/จุดติดตั้ง</th>
-                                <th class="p-4">ระดับความรุนแรง</th>
-                                <th class="p-4">รายละเอียดข้อบกพร่อง</th>
-                                <th class="p-4">ผู้ตรวจ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dashboard-car-tbody" class="divide-y divide-emerald-50/50">
-                            <!-- Injected dynamically -->
-                        </tbody>
-                    </table>
+                <input type="password" id="admin-pwd" placeholder="รหัสผ่าน (1234)" class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-rose-400 outline-none text-center tracking-widest transition">
+                <button onclick="loginAdmin()" class="w-full bg-rose-700 text-white font-bold py-3.5 rounded-xl hover:bg-rose-800 transition shadow-md shadow-rose-500/20">เข้าสู่ระบบ</button>
+            </div>
+
+            <div id="admin-panel" class="hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-rose-900">ข้อมูลการตรวจเช็คย้อนหลัง</h2>
+                        <p class="text-sm text-gray-500 mt-1">คลิกที่ข้อมูลเพื่อตรวจสอบความครบถ้วน</p>
+                    </div>
+                    <button onclick="logoutAdmin()" class="mt-4 sm:mt-0 text-sm px-4 py-2 bg-white border border-rose-200 text-rose-700 rounded-lg hover:bg-rose-50 transition font-medium">ออกจากระบบ</button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gradient-to-r from-rose-50 to-red-50 border-b border-rose-100 text-rose-900 text-sm">
+                                    <th class="p-4 font-semibold">วันที่ตรวจ</th>
+                                    <th class="p-4 font-semibold">รหัสถัง</th>
+                                    <th class="p-4 font-semibold">จุดติดตั้ง</th>
+                                    <th class="p-4 font-semibold">วันหมดอายุ</th>
+                                    <th class="p-4 font-semibold">สถานะ</th>
+                                    <th class="p-4 font-semibold text-center">ข้อมูลไม่ครบ</th>
+                                    <th class="p-4 font-semibold text-center">ผู้ตรวจ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body" class="text-sm divide-y divide-gray-100">
+                                <!-- Data inject here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- ==================== TAB 3: ADMIN & HISTORY SECTION ==================== -->
-        <div id="section-admin" class="hidden space-y-6">
-            
-            <!-- Admin Security Banner / Auth Controls -->
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div class="flex items-center space-x-3">
-                    <div id="admin-badge" class="bg-slate-100 p-2 rounded-xl text-slate-600">
-                        <i data-lucide="lock" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                            ระบบจัดการและตรวจสอบข้อมูลย้อนหลัง 
-                            <span id="auth-status-tag" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">สิทธิ์: ผู้ใช้ทั่วไป</span>
-                        </h2>
-                        <p class="text-xs text-slate-500">ผู้ดูแลระบบสามารถค้นหา ตรวจสอบข้อมูลที่ตกหล่น (Missing Data) และทำการแก้ไขได้</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button id="btn-login-modal" onclick="openLoginModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center space-x-2">
-                        <i data-lucide="key" class="w-4 h-4"></i>
-                        <span>เข้าสู่ระบบ Admin</span>
-                    </button>
-                    <button id="btn-logout" onclick="logoutAdmin()" class="hidden px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl transition-all">
-                        ออกจากระบบ
-                    </button>
-                </div>
-            </div>
-
-            <!-- Table Filters & Search -->
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                    <div class="relative w-full sm:w-64">
-                        <input type="text" id="admin-search-input" onkeyup="filterAdminTable()" placeholder="ค้นหารหัสถัง, หน่วยงาน..." class="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500">
-                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2"></i>
-                    </div>
-                    <select id="admin-filter-status" onchange="filterAdminTable()" class="w-full sm:w-auto px-3 py-1.5 border border-slate-300 rounded-xl text-xs bg-white">
-                        <option value="ALL">ทุกสถานะผลการตรวจ</option>
-                        <option value="PASS">ผ่านทั้งหมด (Pass)</option>
-                        <option value="FAIL">พบข้อบกพร่อง (Fail)</option>
-                    </select>
-                </div>
-                <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
-                    <button onclick="toggleMissingOnlyFilter()" id="btn-missing-filter" class="px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-xs font-medium flex items-center space-x-1 hover:bg-amber-100">
-                        <i data-lucide="filter" class="w-3.5 h-3.5"></i>
-                        <span>แสดงเฉพาะข้อมูลไม่ครบ (Missing)</span>
-                    </button>
-                    <button onclick="exportToCSV()" class="px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-medium flex items-center space-x-1 hover:bg-slate-50">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                        <span>Export CSV</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- History Records Data Table -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left text-xs text-slate-600">
-                        <thead class="bg-slate-50 text-slate-700 uppercase border-b border-slate-200">
-                            <tr>
-                                <th class="p-3">วันที่/เวลา</th>
-                                <th class="p-3">รหัสถัง</th>
-                                <th class="p-3">หน่วยงาน</th>
-                                <th class="p-3">ประเภทถัง</th>
-                                <th class="p-3">ผลการตรวจ</th>
-                                <th class="p-3">ข้อบกพร่อง (CAR)</th>
-                                <th class="p-3">ข้อมูลสมบูรณ์</th>
-                                <th class="p-3">ผู้ตรวจ</th>
-                                <th class="p-3 text-center">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-table-tbody" class="divide-y divide-slate-100">
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== TAB 4: GAS INTEGRATION CODE ==================== -->
-        <div id="section-gas" class="hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
-                    <span class="bg-emerald-50 text-emerald-600 p-2 rounded-xl"><i data-lucide="file-code" class="w-6 h-6"></i></span>
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900">การเชื่อมต่อ Google Sheets ด้วย Google Apps Script (GAS)</h2>
-                        <p class="text-xs text-slate-500">คัดลอกโค้ดนี้ไปวางที่ Extensions > Apps Script ใน Google Sheets เพื่อรองรับการบันทึกข้อมูลแบบเรียลไทม์</p>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-semibold text-slate-700">คำสั่งสร้างตารางอัตโนมัติ (SetupSheet) & Web App Service:</span>
-                        <button onclick="copyGASCode()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 flex items-center space-x-1">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            <span>คัดลอกโค้ด GAS</span>
-                        </button>
-                    </div>
-
-                    <pre class="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs font-mono overflow-x-auto h-96 custom-scrollbar" id="gas-code-block">
-// =========================================================================
-// GOOGLE APPS SCRIPT (GAS) FOR HOSPITAL FIRE EXTINGUISHER INSPECTION
-// Form Code: FM-ENV-FIRE-01 (รพ.หนองสองห้อง)
-// =========================================================================
-
-function setupSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Inspection_Logs");
-  if (!sheet) {
-    sheet = ss.insertSheet("Inspection_Logs");
-  }
-  
-  // Create Complete Headers Automatically
-  var headers = [
-    "Timestamp", "Asset_ID", "Department", "Location", "Extinguisher_Type", 
-    "Capacity", "Fire_Class", "Next_Test_Date", "Inspect_Date", "Inspect_Period", 
-    "Inspector_Name", "Overall_Status", "M01", "M02", "M03", "M04", 
-    "M05", "M06", "M07", "M08", "M09", "M10", "M11", "M12", 
-    "Defect_Severity", "Defect_Details", "Missing_Fields_Flag"
-  ];
-  
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#dcfce7");
-  sheet.setFrozenRows(1);
-}
-
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Inspection_Logs");
-    if (!sheet) {
-      setupSheet();
-      sheet = ss.getSheetByName("Inspection_Logs");
-    }
-    
-    sheet.appendRow([
-      new Date(),
-      data.asset_id || "",
-      data.department || "",
-      data.location || "",
-      data.extinguisher_type || "",
-      data.capacity || "",
-      data.fire_class || "",
-      data.next_test_date || "",
-      data.inspect_date || "",
-      data.inspect_period || "",
-      data.inspector_name || "",
-      data.overall_status || "",
-      data.M01 || "", data.M02 || "", data.M03 || "", data.M04 || "",
-      data.M05 || "", data.M06 || "", data.M07 || "", data.M08 || "",
-      data.M09 || "", data.M10 || "", data.M11 || "", data.M12 || "",
-      data.defect_severity || "",
-      data.defect_details || "",
-      data.has_missing ? "YES" : "NO"
-    ]);
-    
-    return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({result: "error", message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-                    </pre>
-                </div>
-            </div>
-        </div>
-
     </main>
 
-    <!-- ==================== MODALS ==================== -->
-
-    <!-- Modal 1: Admin Login Modal -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="font-bold text-slate-900 text-base">เข้าสู่ระบบผู้ดูแลระบบ (Admin)</h3>
-                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Username</label>
-                    <input type="text" id="login-user" placeholder="admin" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-700 mb-1">Password</label>
-                    <input type="password" id="login-pass" placeholder="1234" class="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <p class="text-xs text-slate-500">เดโมรหัสผ่าน: Username: <code class="bg-slate-100 px-1 rounded">admin</code> / Password: <code class="bg-slate-100 px-1 rounded">1234</code></p>
-            </div>
-            <button onclick="handleAdminLogin()" class="w-full py-2.5 bg-emerald-600 text-white font-semibold rounded-xl text-sm hover:bg-emerald-700 shadow-md">
-                เข้าสู่ระบบ
-            </button>
-        </div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center font-medium">
+        <i data-lucide="info" class="w-4 h-4 mr-2" id="toast-icon"></i>
+        <span id="toast-msg">Message</span>
     </div>
-
-    <!-- Modal 2: Edit Record & Fill Missing Data -->
-    <div id="modal-edit" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>
-                    <h3 class="font-bold text-slate-900 text-base">แก้ไข / เติมข้อมูลที่ตกหล่น (Data Imputation)</h3>
-                    <p class="text-xs text-slate-500" id="edit-modal-subtitle">รหัสถัง: FE-XXXX</p>
-                </div>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <input type="hidden" id="edit-record-id">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                    <label class="font-medium text-slate-700">รหัสถัง</label>
-                    <input type="text" id="edit-asset-id" class="w-full p-2 border rounded-lg mt-1">
-                </div>
-                <div>
-                    <label class="font-medium text-slate-700">หน่วยงาน</label>
-                    <input type="text" id="edit-department" class="w-full p-2 border rounded-lg mt-1">
-                </div>
-                <div>
-                    <label class="font-medium text-slate-700">จุดติดตั้ง</label>
-                    <input type="text" id="edit-location" class="w-full p-2 border rounded-lg mt-1">
-                </div>
-                <div>
-                    <label class="font-medium text-slate-700">ประเภทถัง</label>
-                    <input type="text" id="edit-extinguisher-type" class="w-full p-2 border rounded-lg mt-1">
-                </div>
-                <div>
-                    <label class="font-medium text-slate-700">ชื่อผู้ตรวจ</label>
-                    <input type="text" id="edit-inspector-name" class="w-full p-2 border rounded-lg mt-1">
-                </div>
-                <div>
-                    <label class="font-medium text-slate-700">ระดับข้อบกพร่อง (CAR)</label>
-                    <select id="edit-defect-severity" class="w-full p-2 border rounded-lg mt-1 bg-white">
-                        <option value="ปกติ">ปกติ</option>
-                        <option value="ทั่วไป">ทั่วไป</option>
-                        <option value="เร่งด่วน">เร่งด่วน</option>
-                    </select>
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="font-medium text-slate-700">รายละเอียดข้อบกพร่องเพิ่มเติม</label>
-                    <textarea id="edit-defect-details" rows="2" class="w-full p-2 border rounded-lg mt-1"></textarea>
-                </div>
-            </div>
-            <div class="flex justify-end space-x-2 pt-3 border-t">
-                <button onclick="closeEditModal()" class="px-4 py-2 border rounded-xl text-xs font-medium">ยกเลิก</button>
-                <button onclick="saveEditRecord()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700">บันทึกการแก้ไข</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Toast Modal -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <script>
-        /* =========================================================================
-           DATA STRUCTURES & GLOBAL STATE
-           ========================================================================= */
-        const MONTHLY_CHECKLIST_DEFINITIONS = [
-            { id: 'M01', label: 'ตำแหน่ง/รหัสถังถูกต้อง มีป้ายบอกตำแหน่งชัดเจน' },
-            { id: 'M02', label: 'ทางเข้าถึงโล่ง ไม่มีสิ่งกีดขวาง หยิบใช้ได้ทันที' },
-            { id: 'M03', label: 'ขายึด/ตู้/ฐานตั้งมั่นคง ไม่หลวม/แตก' },
-            { id: 'M04', label: 'ตัวถัง มือจับ วาล์ว ไม่บุบ รั่ว สนิมหรือกัดกร่อนผิดปกติ' },
-            { id: 'M05', label: 'สลักนิรภัยและซีลกันแกะอยู่ครบ' },
-            { id: 'M06', label: 'สายฉีด/หัวฉีด/ข้อต่อครบ ไม่แตก หลุด หรืออุดตัน' },
-            { id: 'M07', label: 'เกจ/ตัวบ่งชี้อยู่ช่วงพร้อมใช้และอ่านได้ชัด (ถ้ามี)' },
-            { id: 'M08', label: 'น้ำหนัก/ความเต็มอยู่ในเกณฑ์ตามชนิดถังและคู่มือผู้ผลิต' },
-            { id: 'M09', label: 'ฉลากชนิดสาร ประเภทเพลิง และวิธีใช้ภาษาไทยอ่านชัด' },
-            { id: 'M10', label: 'วันบริการ/ทดสอบครั้งถัดไปไม่เลยกำหนด ป้ายตรวจล่าสุดครบ' },
-            { id: 'M11', label: 'ข้อบกพร่องรอบก่อนได้รับการแก้ไข/ปิดงาน' },
-            { id: 'M12', label: 'ภาพรวมพร้อมใช้งาน ไม่มีเหตุให้นำออกจากบริการ' }
+        // --- การตั้งค่าตัวแปรหลัก (Globals) ---
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw_C85-pGWUpQVmxJ-rtGy_bze9nACfEzhzIZBx8x02XgurTtDmjoqWhJcqCXB0AH4W/exec';
+        const GOOGLE_SHEET_DATA_URL = 'https://docs.google.com/spreadsheets/d/1sPdYcFPxCJgC00qJS4CVE6_GDUZwKfxBdlH_fRy6UDA/gviz/tq?tqx=out:json';
+        
+        let currentTab = 'form';
+        let records = []; 
+        let cStatus = null;
+        let cTypes = null;
+
+        // รายการตรวจสอบ (Checklists)
+        const weeklyItems = [
+            "1) ถังอยู่จุดเดิม ไม่สูญหาย มองเห็นชัด",
+            "2) ทางเข้าถึงไม่ถูกกีดขวาง หยิบใช้ได้ทันที",
+            "3) สลักนิรภัยและซีลอยู่ครบ ไม่ถูกแกะ",
+            "4) ตัวถังไม่รั่ว บุบ แตก กัดกร่อน",
+            "5) มาตรวัดอยู่ช่วงพร้อมใช้ (สีเขียว)",
+            "6) สายฉีด-หัวฉีดครบ ไม่อุดตัน/ร้าว"
+        ];
+        const monthlyItems = [
+            "M01 ตำแหน่ง/รหัสถังถูกต้อง มีป้าย",
+            "M02 ทางเข้าถึงโล่ง ไม่มีสิ่งกีดขวาง",
+            "M03 ขายึด/ตู้/ฐานตั้งมั่นคง",
+            "M04 ตัวถัง/วาล์ว ไม่บุบ รั่ว สนิม",
+            "M05 สลักนิรภัยและซีลกันแกะอยู่ครบ",
+            "M06 สายฉีด/หัวฉีดครบ ไม่แตกร้าว",
+            "M07 เกจ/ตัวบ่งชี้อยู่ช่วงพร้อมใช้",
+            "M08 น้ำหนัก/ความเต็มอยู่ในเกณฑ์",
+            "M09 ฉลาก/วิธีใช้ภาษาไทยอ่านชัดเจน",
+            "M10 วันทดสอบครั้งถัดไปไม่เลยกำหนด",
+            "M11 ข้อบกพร่องรอบก่อนได้รับการแก้ไข",
+            "M12 ภาพรวมพร้อมใช้งาน ไม่มีเหตุยกเลิก"
         ];
 
-        const WEEKLY_CHECKLIST_DEFINITIONS = [
-            { id: 'W01', label: '1) ถังอยู่จุดเดิม ไม่สูญหาย และมองเห็นชัด' },
-            { id: 'W02', label: '2) ทางเข้าถึงไม่ถูกกีดขวาง หยิบใช้ได้ทันที' },
-            { id: 'W03', label: '3) สลักนิรภัยและซีลอยู่ครบ ไม่ถูกดึง/แกะ' },
-            { id: 'W04', label: '4) ตัวถังไม่รั่ว บุบ แตก กัดกร่อน หรือมีร่องรอยถูกใช้งาน' },
-            { id: 'W05', label: '5) มาตรวัดอยู่ช่วงพร้อมใช้ (ถ้ามี) / ตัวบ่งชี้ปกติ' },
-            { id: 'W06', label: '6) สายฉีด-หัวฉีดอยู่ครบ ไม่อุดตัน/แตกร้าว และป้ายวิธีใช้เห็นชัด' }
-        ];
-
-        const QUARTERLY_DEFINITIONS = [
-            { id: 'Q01', label: 'Q01 ทวนบันทึกรายสัปดาห์/รายเดือนครบถ้วน' },
-            { id: 'Q02', label: 'Q02 ประเภทและขนาดถังเหมาะกับความเสี่ยงพื้นที่' },
-            { id: 'Q03', label: 'Q03 จุดติดตั้ง/ป้าย/การมองเห็น/การเข้าถึงยังเหมาะสม' },
-            { id: 'Q04', label: 'Q04 วันบริการ/เติมสาร/ทดสอบครั้งถัดไปไม่เลยกำหนด' },
-            { id: 'Q05', label: 'Q05 สุ่มตรวจถัง ซีล สลัก สาย/หัวฉีด เกจ และงานค้าง' },
-            { id: 'Q06', label: 'Q06 ทะเบียนรหัส–สถานที่–ประเภท–สถานะตรงกับของจริง' }
-        ];
-
-        const ANNUAL_DEFINITIONS = [
-            { id: 'A01', label: 'A01 ตรวจสภาพถัง วาล์ว มือจับ สลัก ซีล สาย/หัวฉีด และข้อต่อทั้งหมด' },
-            { id: 'A02', label: 'A02 ตรวจแรงดัน/น้ำหนัก/ปริมาณสารตามชนิดถังและวิธีผู้ผลิต' },
-            { id: 'A03', label: 'A03 ซ่อม เปลี่ยนอะไหล่ เติม/เปลี่ยนสารเมื่อถึงเกณฑ์หรือพบข้อบกพร่อง' },
-            { id: 'A04', label: 'A04 ทวนกำหนด Hydrostatic test ตามชนิดถังและมาตรฐาน' },
-            { id: 'A05', label: 'A05 ติดป้ายบริการ ระบุวันที่ ผู้ให้บริการ และกำหนดครั้งถัดไป' },
-            { id: 'A06', label: 'A06 ปรับปรุงทะเบียนและปิดข้อบกพร่องก่อนนำกลับประจำจุด' }
-        ];
-
-        let inspectionRecords = [];
-        let checklistState = {};
-        let isAdminLoggedIn = false;
-        let showOnlyMissingFilter = false;
-        let chartStatusInstance = null;
-        let chartTypesInstance = null;
-
-        // URL ของ Google Apps Script สำหรับรับส่งข้อมูล (Web App)
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzkIa0WusrenQNfZ2tA_-e83i8rO8TJ2_fmDYzYwNZCsI-LzxFKNw3woFDIQVF9LVai/exec';
-
+        // --- เริ่มต้นการทำงาน (Initialization) ---
         window.onload = function() {
             lucide.createIcons();
-            initFormDefaults();
+            document.getElementById('inspect_date').value = new Date().toISOString().split('T')[0];
             renderChecklists();
-            loadMockDataIfEmpty();
-            updateDashboardMetrics();
-            renderAdminTable();
+            fetchSheetData(); 
         };
 
-        function initFormDefaults() {
-            document.getElementById('inspect_date').valueAsDate = new Date();
+        // --- ระบบสลับหน้าต่าง (Tabs) ---
+        function switchTab(tab) {
+            document.getElementById(`tab-${currentTab}`).classList.add('hidden');
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            
+            document.getElementById(`nav-${currentTab}`).classList.remove('bg-rose-900', 'shadow-inner');
+            document.getElementById(`nav-${tab}`).classList.add('bg-rose-900', 'shadow-inner');
+            
+            currentTab = tab;
+            if(tab === 'dashboard') updateDashboard();
+            if(tab === 'admin') renderAdminTable();
         }
 
-        // Quick fill asset for testing
-        function quickFillAsset(id) {
-            document.getElementById('asset_id').value = id;
-            document.getElementById('department').value = 'ผู้ป่วยนอก (OPD)';
-            document.getElementById('location').value = 'อาคาร 1 ชั้น 1';
-            document.getElementById('capacity').value = '10 lbs';
-            showToast('เติมข้อมูลตัวอย่างเรียบร้อย', 'info');
+        // --- แจ้งเตือน (Toast) ---
+        function showToast(msg, type='info') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
         }
 
+        // --- สร้างปุ่ม Checklist แบบ Radio ---
         function renderChecklists() {
-            // Render Monthly
-            const monthlyContainer = document.getElementById('monthly-items-container');
-            monthlyContainer.innerHTML = MONTHLY_CHECKLIST_DEFINITIONS.map(item => `
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-2.5 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-all gap-2">
-                    <span class="text-xs text-slate-800 font-medium"><strong class="text-emerald-700">${item.id}:</strong> ${item.label}</span>
-                    <div class="flex space-x-1 self-end sm:self-auto">
-                        <button type="button" onclick="setChoice('${item.id}', 'PASS')" id="btn-${item.id}-PASS" class="px-3 py-1 rounded-lg border text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 transition-all">ผ่าน</button>
-                        <button type="button" onclick="setChoice('${item.id}', 'FAIL')" id="btn-${item.id}-FAIL" class="px-3 py-1 rounded-lg border text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-red-50 hover:text-red-600 transition-all">ไม่ผ่าน</button>
-                        <button type="button" onclick="setChoice('${item.id}', 'NA')" id="btn-${item.id}-NA" class="px-3 py-1 rounded-lg border text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-200 transition-all">N/A</button>
+            const buildHTML = (items, prefix) => {
+                return '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + items.map((item, i) => `
+                    <div class="flex flex-col p-3 border border-rose-100 rounded-xl bg-[#fdf8f8] hover:bg-rose-50 transition">
+                        <span class="text-sm font-medium text-rose-900 mb-2.5">${item}</span>
+                        <div class="flex space-x-1.5">
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="chk_${prefix}_${i}" value="ผ่าน" class="peer sr-only" checked onchange="checkStatus()">
+                                <div class="text-center py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 peer-checked:border-emerald-300 font-semibold transition">ผ่าน</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="chk_${prefix}_${i}" value="ไม่ผ่าน" class="peer sr-only" onchange="checkStatus()">
+                                <div class="text-center py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-red-50 peer-checked:text-red-700 peer-checked:border-red-300 font-semibold transition">ไม่ผ่าน</div>
+                            </label>
+                            <label class="flex-1 cursor-pointer">
+                                <input type="radio" name="chk_${prefix}_${i}" value="N/A" class="peer sr-only" onchange="checkStatus()">
+                                <div class="text-center py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 peer-checked:bg-gray-100 peer-checked:text-gray-700 peer-checked:border-gray-300 font-semibold transition">N/A</div>
+                            </label>
+                        </div>
                     </div>
-                </div>
-            `).join('');
-
-            // Render Weekly
-            const weeklyContainer = document.getElementById('weekly-items-container');
-            weeklyContainer.innerHTML = WEEKLY_CHECKLIST_DEFINITIONS.map(item => `
-                <div class="flex justify-between items-center p-2.5 bg-white border border-slate-200 rounded-xl gap-2">
-                    <span class="text-xs text-slate-800 font-medium">${item.label}</span>
-                    <div class="flex space-x-1">
-                        <button type="button" onclick="setChoice('${item.id}', 'PASS')" id="btn-${item.id}-PASS" class="px-3 py-1 rounded-lg border text-xs font-semibold text-slate-600 bg-slate-50">ผ่าน</button>
-                        <button type="button" onclick="setChoice('${item.id}', 'FAIL')" id="btn-${item.id}-FAIL" class="px-3 py-1 rounded-lg border text-xs font-semibold text-slate-600 bg-slate-50">ไม่ผ่าน</button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Render Quarterly & Annual
-            document.getElementById('quarterly-items-container').innerHTML = QUARTERLY_DEFINITIONS.map(item => `
-                <div class="flex justify-between items-center p-2 bg-slate-50 border rounded-lg text-xs">
-                    <span>${item.label}</span>
-                    <div class="flex space-x-1">
-                        <button type="button" onclick="setChoice('${item.id}', 'PASS')" id="btn-${item.id}-PASS" class="px-2.5 py-0.5 border rounded text-slate-600">ผ่าน</button>
-                        <button type="button" onclick="setChoice('${item.id}', 'FAIL')" id="btn-${item.id}-FAIL" class="px-2.5 py-0.5 border rounded text-slate-600">ไม่ผ่าน</button>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('annual-items-container').innerHTML = ANNUAL_DEFINITIONS.map(item => `
-                <div class="flex justify-between items-center p-2 bg-slate-50 border rounded-lg text-xs">
-                    <span>${item.label}</span>
-                    <div class="flex space-x-1">
-                        <button type="button" onclick="setChoice('${item.id}', 'PASS')" id="btn-${item.id}-PASS" class="px-2.5 py-0.5 border rounded text-slate-600">ผ่าน</button>
-                        <button type="button" onclick="setChoice('${item.id}', 'FAIL')" id="btn-${item.id}-FAIL" class="px-2.5 py-0.5 border rounded text-slate-600">ไม่ผ่าน</button>
-                    </div>
-                </div>
-            `).join('');
+                `).join('') + '</div>';
+            };
+            document.getElementById('checklist-weekly-items').innerHTML = buildHTML(weeklyItems, 'w');
+            document.getElementById('checklist-monthly-items').innerHTML = buildHTML(monthlyItems, 'm');
         }
 
-        function setChoice(itemId, status) {
-            checklistState[itemId] = status;
-
-            // Reset UI for item
-            ['PASS', 'FAIL', 'NA'].forEach(st => {
-                const btn = document.getElementById(`btn-${itemId}-${st}`);
-                if (btn) {
-                    btn.classList.remove('btn-choice-active-pass', 'btn-choice-active-fail', 'btn-choice-active-na');
-                }
-            });
-
-            // Set active class
-            const activeBtn = document.getElementById(`btn-${itemId}-${status}`);
-            if (activeBtn) {
-                if (status === 'PASS') activeBtn.classList.add('btn-choice-active-pass');
-                if (status === 'FAIL') activeBtn.classList.add('btn-choice-active-fail');
-                if (status === 'NA') activeBtn.classList.add('btn-choice-active-na');
+        // --- สลับฟอร์มตรวจ รายสัปดาห์ / รายเดือน ---
+        function switchChecklistBySelect(val) {
+            if (val === 'รายสัปดาห์') {
+                document.getElementById('checklist-weekly-container').classList.remove('hidden');
+                document.getElementById('checklist-monthly-container').classList.add('hidden');
+            } else {
+                document.getElementById('checklist-weekly-container').classList.add('hidden');
+                document.getElementById('checklist-monthly-container').classList.remove('hidden');
             }
-
-            // Auto switch severity if failed
-            if (status === 'FAIL') {
-                document.getElementById('defect_severity').value = 'เร่งด่วน';
-            }
+            checkStatus(); 
         }
 
-        function setAllChecklist(type) {
-            MONTHLY_CHECKLIST_DEFINITIONS.forEach(item => {
-                if (type === 'PASS') setChoice(item.id, 'PASS');
-                if (type === 'RESET') {
-                    delete checklistState[item.id];
-                    ['PASS', 'FAIL', 'NA'].forEach(st => {
-                        const btn = document.getElementById(`btn-${item.id}-${st}`);
-                        if (btn) btn.classList.remove('btn-choice-active-pass', 'btn-choice-active-fail', 'btn-choice-active-na');
-                    });
+        // --- อัปเดตสถานะอัตโนมัติตาม Checklist ---
+        function checkStatus() {
+            const period = document.getElementById('inspect_period').value;
+            const prefix = period === 'รายสัปดาห์' ? 'w' : 'm';
+            const count = period === 'รายสัปดาห์' ? weeklyItems.length : monthlyItems.length;
+            
+            let allPassed = true;
+            for (let i = 0; i < count; i++) {
+                const checked = document.querySelector(`input[name="chk_${prefix}_${i}"]:checked`);
+                if (checked && checked.value === 'ไม่ผ่าน') {
+                    allPassed = false;
+                    break;
                 }
-            });
+            }
+            document.getElementById('overall_status').value = allPassed ? 'ผ่าน' : 'ไม่ผ่าน';
         }
 
-        function setFormCycle(cycle) {
-            ['monthly', 'weekly', 'quarterly'].forEach(c => {
-                document.getElementById(`checklist-${c}`).classList.add('hidden');
-                const btn = document.getElementById(`cycle-btn-${c}`);
-                btn.className = "px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900";
-            });
-
-            document.getElementById(`checklist-${cycle}`).classList.remove('hidden');
-            const activeBtn = document.getElementById(`cycle-btn-${cycle}`);
-            activeBtn.className = "px-3 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm font-semibold";
-        }
-
+        // --- ส่งข้อมูลแบบฟอร์ม (Submit) ---
         function handleFormSubmit(e) {
             e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 mr-2 animate-spin"></i> กำลังบันทึก...';
+            btn.disabled = true;
 
-            const assetId = document.getElementById('asset_id').value.trim();
-            const dept = document.getElementById('department').value.trim();
-            const location = document.getElementById('location').value.trim();
-            const inspector = document.getElementById('inspector_name').value.trim();
-
-            if (!assetId || !dept || !location || !inspector) {
-                showToast('กรุณากรอกข้อมูลสำคัญ (รหัสถัง, หน่วยงาน, จุดติดตั้ง, ผู้ตรวจ) ให้ครบถ้วน', 'error');
-                return;
+            const period = document.getElementById('inspect_period').value;
+            const prefix = period === 'รายสัปดาห์' ? 'w' : 'm';
+            const items = period === 'รายสัปดาห์' ? weeklyItems : monthlyItems;
+            
+            let checklistResults = [];
+            let hasMissingData = false;
+            for (let i = 0; i < items.length; i++) {
+                const el = document.querySelector(`input[name="chk_${prefix}_${i}"]:checked`);
+                if (el) {
+                    checklistResults.push(`${i+1}:${el.value}`);
+                } else {
+                    hasMissingData = true;
+                }
             }
 
-            // Calculate overall status
-            let hasFail = Object.values(checklistState).includes('FAIL');
-            let overallStatus = hasFail ? 'FAIL' : 'PASS';
-
-            // Detect missing values in standard metadata
-            let missingFields = [];
-            if (!document.getElementById('capacity').value) missingFields.push('ขนาด/ความจุ');
-            if (!document.getElementById('next_test_date').value) missingFields.push('วันทดสอบถัดไป');
-
-            const record = {
-                id: 'REC-' + Date.now(),
-                timestamp: new Date().toLocaleString('th-TH'),
-                asset_id: assetId,
-                department: dept,
-                location: location,
-                extinguisher_type: document.getElementById('extinguisher_type').value,
-                capacity: document.getElementById('capacity').value || '-',
-                fire_class: Array.from(document.querySelectorAll('input[name="fire_class"]:checked')).map(cb => cb.value).join(','),
-                next_test_date: document.getElementById('next_test_date').value || '-',
+            const data = {
+                timestamp: new Date().toISOString(),
                 inspect_date: document.getElementById('inspect_date').value,
-                inspect_period: document.getElementById('inspect_period').value,
-                inspector_name: inspector,
-                overall_status: overallStatus,
-                checklist: { ...checklistState },
+                inspector_name: document.getElementById('inspector_name').value,
+                asset_id: document.getElementById('asset_id').value,
+                department: document.getElementById('department').value,
+                location: document.getElementById('location').value,
+                mfg_date: document.getElementById('mfg_date').value,
+                exp_date: document.getElementById('exp_date').value,
+                extinguisher_type: document.getElementById('extinguisher_type').value,
+                capacity: document.getElementById('capacity').value,
+                inspect_period: period,
+                checklist_data: checklistResults.join(','), 
+                overall_status: document.getElementById('overall_status').value,
                 defect_severity: document.getElementById('defect_severity').value,
-                defect_details: document.getElementById('defect_details').value || '-',
-                has_missing: missingFields.length > 0,
-                missing_fields: missingFields
+                defect_details: document.getElementById('defect_details').value,
+                missing_data: hasMissingData ? 'Yes' : 'No'
             };
 
-            const gasPayload = {
-                asset_id: record.asset_id,
-                department: record.department,
-                location: record.location,
-                extinguisher_type: record.extinguisher_type,
-                capacity: record.capacity,
-                fire_class: record.fire_class,
-                next_test_date: record.next_test_date,
-                inspect_date: record.inspect_date,
-                inspect_period: record.inspect_period,
-                inspector_name: record.inspector_name,
-                overall_status: record.overall_status,
-                defect_severity: record.defect_severity,
-                defect_details: record.defect_details,
-                has_missing: record.has_missing,
-                ...checklistState
-            };
+            const params = new URLSearchParams(data).toString();
+            const urlWithParams = `${GAS_WEB_APP_URL}?${params}`;
 
-            fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors', // ป้องกันปัญหา CORS Policy เมื่อส่งเข้า GAS
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify(gasPayload)
-            }).then(() => {
-                console.log('✅ Data seamlessly forwarded to Google Sheets (GAS).');
-            }).catch(error => {
-                console.error('❌ GAS Sync Error:', error);
+            fetch(urlWithParams, { method: 'GET', mode: 'no-cors' })
+                .then(() => {
+                    showToast('บันทึกข้อมูลเรียบร้อยแล้ว!', 'success');
+                    document.getElementById('fire-inspection-form').reset();
+                    document.getElementById('inspect_date').value = new Date().toISOString().split('T')[0];
+                    renderChecklists(); 
+                    setTimeout(fetchSheetData, 1500); // ดีเลย์เล็กน้อยเพื่อให้ GAS เขียนลงชีตเสร็จ
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('บันทึกสำเร็จ (Offline mode)', 'info');
+                    document.getElementById('fire-inspection-form').reset();
+                })
+                .finally(() => {
+                    btn.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i> บันทึกข้อมูลการตรวจเช็ค';
+                    btn.disabled = false;
+                    lucide.createIcons();
+                });
+        }
+
+        // --- ดึงข้อมูลจาก Google Sheets (GViz) ---
+        function fetchSheetData() {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-yellow-400 rounded-full inline-block animate-pulse"></span> กำลังซิงค์...';
+            
+            fetch(GOOGLE_SHEET_DATA_URL)
+                .then(res => res.text())
+                .then(text => {
+                    const jsonString = text.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\)/)[1];
+                    const data = JSON.parse(jsonString);
+                    
+                    const cols = data.table.cols.map(c => c.label || c.id);
+                    records = data.table.rows.map(row => {
+                        let obj = {};
+                        row.c.forEach((cell, i) => {
+                            if(cols[i]) obj[cols[i]] = cell ? (cell.f || cell.v) : '';
+                        });
+                        return obj;
+                    });
+                    
+                    statusEl.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full inline-block"></span> ข้อมูลล่าสุดแล้ว';
+                    if (currentTab === 'dashboard') updateDashboard();
+                    if (currentTab === 'admin' && !document.getElementById('admin-panel').classList.contains('hidden')) renderAdminTable();
+                })
+                .catch(err => {
+                    console.error('Error fetching sheet data:', err);
+                    statusEl.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-red-500 rounded-full inline-block"></span> ซิงค์ล้มเหลว';
+                });
+        }
+
+        // --- อัปเดต Dashboard ---
+        function updateDashboard() {
+            if (!records.length) return;
+
+            const statusColName = records[0].hasOwnProperty('overall_status') ? 'overall_status' : 
+                                  records[0].hasOwnProperty('สถานะภาพรวม') ? 'สถานะภาพรวม' : 
+                                  Object.keys(records[0]).find(k => k.includes('สถานะ')) || 'status';
+            
+            const missingColName = records[0].hasOwnProperty('missing_data') ? 'missing_data' : 
+                                   records[0].hasOwnProperty('ข้อมูลไม่ครบ') ? 'ข้อมูลไม่ครบ' : 
+                                   'missing';
+
+            const typeColName = records[0].hasOwnProperty('extinguisher_type') ? 'extinguisher_type' : 
+                                records[0].hasOwnProperty('ประเภทถัง') ? 'ประเภทถัง' : 
+                                'type';
+
+            let passed = 0, failed = 0, missing = 0;
+            let typeCounts = {};
+
+            records.forEach(r => {
+                const status = String(r[statusColName] || '').toLowerCase();
+                if (status.includes('ผ่าน') && !status.includes('ไม่')) passed++;
+                else if (status.includes('ไม่ผ่าน')) failed++;
+                
+                const isMissing = String(r[missingColName] || '').toLowerCase();
+                if (isMissing === 'yes' || isMissing === 'ใช่') missing++;
+
+                const t = r[typeColName] || 'ไม่ระบุ';
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
             });
 
-            inspectionRecords.unshift(record);
-            saveRecordsToStorage();
+            document.getElementById('kpi-total').innerText = records.length;
+            document.getElementById('kpi-ready').innerText = passed;
+            document.getElementById('kpi-defective').innerText = failed;
+            document.getElementById('kpi-missing').innerText = missing;
 
-            showToast('บันทึกข้อมูลการตรวจเช็คสำเร็จเรียบร้อยแล้ว!', 'success');
-            resetForm();
-            updateDashboardMetrics();
-            renderAdminTable();
+            renderCharts(passed, failed, typeCounts);
         }
 
-        function resetForm() {
-            document.getElementById('inspection-form').reset();
-            checklistState = {};
-            setAllChecklist('RESET');
-            initFormDefaults();
-        }
-
-        function switchTab(tabId) {
-            ['form', 'dashboard', 'admin', 'gas'].forEach(t => {
-                document.getElementById(`section-${t}`).classList.add('hidden');
-                
-                // Desktop tab styling
-                const btn = document.getElementById(`tab-btn-${t}`);
-                if (btn) btn.className = "px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-slate-600 hover:text-slate-900";
-                
-                // Mobile tab styling
-                const mobBtn = document.getElementById(`mob-tab-${t}`);
-                if (mobBtn) mobBtn.className = "flex-1 py-3 text-center text-xs font-medium text-slate-500";
-            });
-
-            // Show selected
-            document.getElementById(`section-${tabId}`).classList.remove('hidden');
-            
-            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
-            if (activeBtn) activeBtn.className = "px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 bg-white text-slate-900 shadow-sm font-semibold";
-            
-            const activeMobBtn = document.getElementById(`mob-tab-${tabId}`);
-            if (activeMobBtn) activeMobBtn.className = "flex-1 py-3 text-center text-xs font-medium text-emerald-600 border-b-2 border-emerald-600 font-semibold";
-
-            if (tabId === 'dashboard') {
-                renderDashboardCharts();
-            }
-        }
-
-        function loadMockDataIfEmpty() {
-            const stored = localStorage.getItem('nsh_fire_records');
-            if (stored) {
-                inspectionRecords = JSON.parse(stored);
-            } else {
-                // Initialize default sample records for immediate demo
-                inspectionRecords = [
-                    {
-                        id: 'REC-101',
-                        timestamp: '26/8/2026 10:15:00',
-                        asset_id: 'FE-OPD-01',
-                        department: 'ผู้ป่วยนอก (OPD)',
-                        location: 'หน้าห้องตรวจ 1 ชั้น 1',
-                        extinguisher_type: 'ผงเคมีแห้ง ABC',
-                        capacity: '10 lbs',
-                        fire_class: 'A,B,C',
-                        next_test_date: '2027-01-15',
-                        inspect_date: '2026-08-26',
-                        inspect_period: 'สิงหาคม',
-                        inspector_name: 'สมชาย ดีเลิศ',
-                        overall_status: 'PASS',
-                        defect_severity: 'ปกติ',
-                        defect_details: '-',
-                        has_missing: false,
-                        missing_fields: []
-                    },
-                    {
-                        id: 'REC-102',
-                        timestamp: '26/8/2026 11:30:00',
-                        asset_id: 'FE-ER-02',
-                        department: 'อุบัติเหตุและฉุกเฉิน (ER)',
-                        location: 'ทางเข้าห้องฉุกเฉิน',
-                        extinguisher_type: 'CO₂',
-                        capacity: '-',
-                        fire_class: 'B,C',
-                        next_test_date: '-',
-                        inspect_date: '2026-08-26',
-                        inspect_period: 'สิงหาคม',
-                        inspector_name: 'วิภา สายชล',
-                        overall_status: 'FAIL',
-                        defect_severity: 'เร่งด่วน',
-                        defect_details: 'เกจวัดแรงดันตกต่ำกว่าเกณฑ์มาตรฐาน สลักนิรภัยหลุดหาย',
-                        has_missing: true,
-                        missing_fields: ['ขนาด/ความจุ', 'วันทดสอบถัดไป']
-                    },
-                    {
-                        id: 'REC-103',
-                        timestamp: '25/8/2026 14:20:00',
-                        asset_id: 'FE-OR-01',
-                        department: 'ห้องผ่าตัด (OR)',
-                        location: 'โถงทางเดินหน้าห้อง OR 2',
-                        extinguisher_type: 'Clean Agent',
-                        capacity: '15 lbs',
-                        fire_class: 'A,B,C',
-                        next_test_date: '2026-12-01',
-                        inspect_date: '2026-08-25',
-                        inspect_period: 'สิงหาคม',
-                        inspector_name: 'สมชาย ดีเลิศ',
-                        overall_status: 'PASS',
-                        defect_severity: 'ปกติ',
-                        defect_details: '-',
-                        has_missing: false,
-                        missing_fields: []
-                    }
-                ];
-                saveRecordsToStorage();
-            }
-        }
-
-        function saveRecordsToStorage() {
-            localStorage.setItem('nsh_fire_records', JSON.stringify(inspectionRecords));
-        }
-
-        function updateDashboardMetrics() {
-            const total = inspectionRecords.length;
-            const passCount = inspectionRecords.filter(r => r.overall_status === 'PASS').length;
-            const urgentCount = inspectionRecords.filter(r => r.defect_severity === 'เร่งด่วน').length;
-            const missingCount = inspectionRecords.filter(r => r.has_missing).length;
-
-            const passRate = total > 0 ? Math.round((passCount / total) * 100) : 0;
-
-            document.getElementById('stat-total-inspections').innerText = total;
-            document.getElementById('stat-pass-rate').innerText = passRate + '%';
-            document.getElementById('stat-urgent-cars').innerText = urgentCount;
-            document.getElementById('stat-missing-count').innerText = missingCount;
-
-            // Render CAR Table in Dashboard
-            const carTbody = document.getElementById('dashboard-car-tbody');
-            const carRecords = inspectionRecords.filter(r => r.overall_status === 'FAIL' || r.defect_severity !== 'ปกติ');
-
-            if (carRecords.length === 0) {
-                carTbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-emerald-400/80 bg-white"><div class="flex flex-col items-center justify-center"><i data-lucide="shield-check" class="w-8 h-8 mb-2 opacity-50"></i><span>ไม่พบรายการข้อบกพร่อง ถังดับเพลิงทุกจุดพร้อมใช้งาน</span></div></td></tr>`;
-                lucide.createIcons(); // re-init icons for the empty state
-            } else {
-                carTbody.innerHTML = carRecords.map(r => `
-                    <tr class="hover:bg-emerald-50/30 transition-colors duration-150">
-                        <td class="p-4 text-emerald-700/80">${r.inspect_date}</td>
-                        <td class="p-4 font-bold text-emerald-900">${r.asset_id}</td>
-                        <td class="p-4 text-emerald-800/90">${r.department} <span class="text-emerald-500/80 block mt-0.5 text-[10px]">(${r.location})</span></td>
-                        <td class="p-4">
-                            <span class="px-2.5 py-1 rounded-md text-[10px] font-semibold border ${r.defect_severity === 'เร่งด่วน' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}">
-                                ${r.defect_severity}
-                            </span>
-                        </td>
-                        <td class="p-4 text-slate-600 font-medium">${r.defect_details}</td>
-                        <td class="p-4 text-emerald-700/80">${r.inspector_name}</td>
-                    </tr>
-                `).join('');
-            }
-        }
-
-        function renderDashboardCharts() {
-            const passCount = inspectionRecords.filter(r => r.overall_status === 'PASS').length;
-            const failCount = inspectionRecords.filter(r => r.overall_status === 'FAIL').length;
-
-            // Chart 1: Status Doughnut
-            const ctxStatus = document.getElementById('chartStatus').getContext('2d');
-            if (chartStatusInstance) chartStatusInstance.destroy();
-
-            chartStatusInstance = new Chart(ctxStatus, {
+        function renderCharts(passed, failed, typeCounts) {
+            // Chart 1: Status (คงสีเขียว/แดงไว้เพื่อความหมายที่ชัดเจน)
+            const ctxStatus = document.getElementById('chartStatus');
+            if (cStatus) cStatus.destroy();
+            cStatus = new Chart(ctxStatus, {
                 type: 'doughnut',
                 data: {
-                    labels: ['พร้อมใช้งาน (Pass)', 'พบข้อบกพร่อง (Fail)'],
+                    labels: ['พร้อมใช้งาน', 'พบข้อบกพร่อง'],
                     datasets: [{
-                        data: [passCount, failCount],
-                        backgroundColor: ['#6ee7b7', '#fca5a5'], // Pastel Green & Pastel Red
-                        hoverBackgroundColor: ['#34d399', '#f87171'],
+                        data: [passed, failed],
+                        backgroundColor: ['#34d399', '#fb7185'], // Emerald & Rose
                         borderWidth: 0,
                         hoverOffset: 4
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: { 
-                        legend: { 
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { family: "'Sarabun', sans-serif", size: 11 },
-                                color: '#064e3b'
-                            }
-                        } 
-                    }
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { family: 'Inter' } } } },
+                    cutout: '70%'
                 }
             });
 
-            // Chart 2: Extinguisher Types Bar
-            const typeCounts = {};
-            inspectionRecords.forEach(r => {
-                typeCounts[r.extinguisher_type] = (typeCounts[r.extinguisher_type] || 0) + 1;
-            });
-
-            const ctxTypes = document.getElementById('chartTypes').getContext('2d');
-            if (chartTypesInstance) chartTypesInstance.destroy();
-
-            // Generate pastel teal gradient
-            const gradient = ctxTypes.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, '#5eead4'); // teal-300
-            gradient.addColorStop(1, '#99f6e4'); // teal-200
-
-            chartTypesInstance = new Chart(ctxTypes, {
+            // Chart 2: Types (ไล่สีโทน Rose พาสเทล)
+            const ctxTypes = document.getElementById('chartTypes');
+            if (cTypes) cTypes.destroy();
+            cTypes = new Chart(ctxTypes, {
                 type: 'bar',
                 data: {
                     labels: Object.keys(typeCounts),
                     datasets: [{
-                        label: 'จำนวนถัง (ใบ)',
+                        label: 'จำนวน (ถัง)',
                         data: Object.values(typeCounts),
-                        backgroundColor: gradient,
-                        borderRadius: 6,
-                        borderWidth: 0,
-                        barPercentage: 0.6
+                        backgroundColor: [
+                            '#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c' 
+                        ],
+                        borderRadius: 6
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
                     scales: { 
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { precision: 0, color: '#0f766e', font: {family: "'Sarabun', sans-serif"} },
-                            grid: { color: '#ccfbf1', drawBorder: false }
-                        },
-                        x: {
-                            ticks: { color: '#0f766e', font: {family: "'Sarabun', sans-serif"} },
-                            grid: { display: false, drawBorder: false }
-                        }
-                    },
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(13, 148, 136, 0.9)',
-                            titleFont: { family: "'Sarabun', sans-serif" },
-                            bodyFont: { family: "'Sarabun', sans-serif" },
-                            padding: 10,
-                            cornerRadius: 8
-                        }
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { grid: { display: false } }
                     }
                 }
             });
         }
 
-        function renderAdminTable() {
-            const tbody = document.getElementById('admin-table-tbody');
-            const searchVal = (document.getElementById('admin-search-input')?.value || '').toLowerCase();
-            const statusFilter = document.getElementById('admin-filter-status')?.value || 'ALL';
-
-            let filtered = inspectionRecords.filter(r => {
-                const matchSearch = r.asset_id.toLowerCase().includes(searchVal) || 
-                                    r.department.toLowerCase().includes(searchVal) ||
-                                    r.inspector_name.toLowerCase().includes(searchVal);
-                const matchStatus = statusFilter === 'ALL' || r.overall_status === statusFilter;
-                const matchMissing = !showOnlyMissingFilter || r.has_missing;
-
-                return matchSearch && matchStatus && matchMissing;
-            });
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">ไม่พบข้อมูลตามเงื่อนไขที่ระบุ</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(r => `
-                <tr class="hover:bg-slate-50 transition-all">
-                    <td class="p-3 text-slate-500 whitespace-nowrap">${r.timestamp}</td>
-                    <td class="p-3 font-bold text-slate-900 font-mono">${r.asset_id}</td>
-                    <td class="p-3">${r.department}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 rounded text-slate-700">${r.extinguisher_type}</span></td>
-                    <td class="p-3">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${r.overall_status === 'PASS' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
-                            ${r.overall_status === 'PASS' ? '✓ ผ่าน' : '✕ ไม่ผ่าน'}
-                        </span>
-                    </td>
-                    <td class="p-3 text-slate-700 max-w-xs truncate">${r.defect_details}</td>
-                    <td class="p-3">
-                        ${r.has_missing 
-                            ? `<span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-semibold">ขาด: ${r.missing_fields.join(', ')}</span>`
-                            : `<span class="text-emerald-600 font-semibold">ครบถ้วน</span>`
-                        }
-                    </td>
-                    <td class="p-3">${r.inspector_name}</td>
-                    <td class="p-3 text-center space-x-1 whitespace-nowrap">
-                        <button onclick="openEditModal('${r.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium">
-                            ${isAdminLoggedIn ? 'แก้ไข/เติมค่า' : 'ดูรายละเอียด'}
-                        </button>
-                        ${isAdminLoggedIn ? `<button onclick="deleteRecord('${r.id}')" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-medium">ลบ</button>` : ''}
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function filterAdminTable() {
-            renderAdminTable();
-        }
-
-        function toggleMissingOnlyFilter() {
-            showOnlyMissingFilter = !showOnlyMissingFilter;
-            const btn = document.getElementById('btn-missing-filter');
-            if (showOnlyMissingFilter) {
-                btn.className = "px-3 py-1.5 rounded-xl border border-amber-500 bg-amber-500 text-white text-xs font-medium flex items-center space-x-1 shadow-sm";
-            } else {
-                btn.className = "px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-xs font-medium flex items-center space-x-1 hover:bg-amber-100";
-            }
-            renderAdminTable();
-        }
-
-        function openLoginModal() {
-            document.getElementById('modal-login').classList.remove('hidden');
-        }
-
-        function closeLoginModal() {
-            document.getElementById('modal-login').classList.add('hidden');
-        }
-
-        function handleAdminLogin() {
-            const u = document.getElementById('login-user').value;
-            const p = document.getElementById('login-pass').value;
-
-            if (u === 'admin' && p === '1234') {
-                isAdminLoggedIn = true;
-                closeLoginModal();
-                document.getElementById('btn-login-modal').classList.add('hidden');
-                document.getElementById('btn-logout').classList.remove('hidden');
-                document.getElementById('auth-status-tag').innerText = "สิทธิ์: Admin (ผู้ดูแลระบบ)";
-                document.getElementById('auth-status-tag').className = "text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold";
-                document.getElementById('admin-badge').className = "bg-emerald-100 p-2 rounded-xl text-emerald-700";
-                
-                showToast('เข้าสู่ระบบผู้ดูแลระบบสำเร็จ', 'success');
+        // --- ระบบ Admin ---
+        function loginAdmin() {
+            const pwd = document.getElementById('admin-pwd').value;
+            if (pwd === '1234') { 
+                document.getElementById('admin-login-box').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
                 renderAdminTable();
             } else {
-                showToast('Username หรือ Password ไม่ถูกต้อง (เดโม: admin/1234)', 'error');
+                showToast('รหัสผ่านไม่ถูกต้อง', 'error');
             }
         }
 
         function logoutAdmin() {
-            isAdminLoggedIn = false;
-            document.getElementById('btn-login-modal').classList.remove('hidden');
-            document.getElementById('btn-logout').classList.add('hidden');
-            document.getElementById('auth-status-tag').innerText = "สิทธิ์: ผู้ใช้ทั่วไป";
-            document.getElementById('auth-status-tag').className = "text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600";
-            document.getElementById('admin-badge').className = "bg-slate-100 p-2 rounded-xl text-slate-600";
+            document.getElementById('admin-pwd').value = '';
+            document.getElementById('admin-login-box').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
             
-            showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
-            renderAdminTable();
-        }
-
-        function openEditModal(recId) {
-            const rec = inspectionRecords.find(r => r.id === recId);
-            if (!rec) return;
-
-            document.getElementById('edit-record-id').value = rec.id;
-            document.getElementById('edit-modal-subtitle').innerText = `รหัสถัง: ${rec.asset_id} | วันที่ตรวจ: ${rec.inspect_date}`;
-            document.getElementById('edit-asset-id').value = rec.asset_id;
-            document.getElementById('edit-department').value = rec.department;
-            document.getElementById('edit-location').value = rec.location;
-            document.getElementById('edit-extinguisher-type').value = rec.extinguisher_type;
-            document.getElementById('edit-inspector-name').value = rec.inspector_name;
-            document.getElementById('edit-defect-severity').value = rec.defect_severity;
-            document.getElementById('edit-defect-details').value = rec.defect_details;
-
-            document.getElementById('modal-edit').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('modal-edit').classList.add('hidden');
-        }
-
-        function saveEditRecord() {
-            const recId = document.getElementById('edit-record-id').value;
-            const rec = inspectionRecords.find(r => r.id === recId);
-            if (!rec) return;
-
-            rec.asset_id = document.getElementById('edit-asset-id').value;
-            rec.department = document.getElementById('edit-department').value;
-            rec.location = document.getElementById('edit-location').value;
-            rec.extinguisher_type = document.getElementById('edit-extinguisher-type').value;
-            rec.inspector_name = document.getElementById('edit-inspector-name').value;
-            rec.defect_severity = document.getElementById('edit-defect-severity').value;
-            rec.defect_details = document.getElementById('edit-defect-details').value;
-            
-            // Re-evaluate missing data status
-            rec.has_missing = false;
-            rec.missing_fields = [];
-
-            saveRecordsToStorage();
-            closeEditModal();
-            showToast('ปรับปรุงและแก้ไขข้อมูลเรียบร้อยแล้ว', 'success');
-            updateDashboardMetrics();
-            renderAdminTable();
-        }
-
-        function deleteRecord(recId) {
-            if (!isAdminLoggedIn) {
-                showToast('ต้อง Log in Admin ก่อนทำการลบข้อมูล', 'error');
-                return;
-            }
-            inspectionRecords = inspectionRecords.filter(r => r.id !== recId);
-            saveRecordsToStorage();
-            showToast('ลบรายการข้อมูลเรียบร้อยแล้ว', 'info');
-            updateDashboardMetrics();
-            renderAdminTable();
-        }
-
-        function exportToCSV() {
-            if (inspectionRecords.length === 0) {
-                showToast('ไม่มีข้อมูลสำหรับส่งออก', 'error');
+            if(!records.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center p-6 text-gray-500">ยังไม่มีข้อมูล</td></tr>';
                 return;
             }
 
-            let csvContent = "\uFEFF"; // UTF-8 BOM
-            csvContent += "ID,Timestamp,Asset_ID,Department,Location,Type,Capacity,Inspect_Date,Inspector,Status,Defect_Severity,Defect_Details\n";
+            const cols = Object.keys(records[0]);
+            const dateCol = cols.find(c => c.includes('date') || c.includes('วันที่')) || cols[0];
+            const assetCol = cols.find(c => c.includes('asset') || c.includes('รหัสถัง')) || cols[1];
+            const deptCol = cols.find(c => c.includes('department') || c.includes('หน่วยงาน')) || cols[2];
+            const locCol = cols.find(c => c.includes('location') || c.includes('จุดติดตั้ง')) || cols[2];
+            const expCol = cols.find(c => c.includes('exp_date') || c.includes('หมดอายุ')) || '';
+            const statusCol = cols.find(c => c.includes('status') || c.includes('สถานะภาพรวม')) || cols[3];
+            const missCol = cols.find(c => c.includes('missing') || c.includes('ข้อมูลไม่ครบ')) || cols[4];
+            const inspCol = cols.find(c => c.includes('inspector') || c.includes('ผู้ตรวจ')) || cols[5];
 
-            inspectionRecords.forEach(r => {
-                const row = [
-                    r.id,
-                    `"${r.timestamp}"`,
-                    `"${r.asset_id}"`,
-                    `"${r.department}"`,
-                    `"${r.location}"`,
-                    `"${r.extinguisher_type}"`,
-                    `"${r.capacity}"`,
-                    `"${r.inspect_date}"`,
-                    `"${r.inspector_name}"`,
-                    `"${r.overall_status}"`,
-                    `"${r.defect_severity}"`,
-                    `"${r.defect_details}"`
-                ];
-                csvContent += row.join(",") + "\n";
+            const recent = [...records].reverse().slice(0, 50);
+
+            recent.forEach(r => {
+                const isPass = String(r[statusCol] || '').includes('ผ่าน') && !String(r[statusCol] || '').includes('ไม่');
+                const statusBadge = isPass 
+                    ? '<span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold">ผ่าน</span>' 
+                    : '<span class="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold">ไม่ผ่าน</span>';
+                
+                const isMiss = String(r[missCol] || '').toLowerCase() === 'yes' || String(r[missCol] || '').includes('ใช่');
+                const missBadge = isMiss 
+                    ? '<span class="text-amber-500 font-bold" title="ข้อมูลสูญหาย/ไม่ครบ">⚠</span>' 
+                    : '<span class="text-gray-300">-</span>';
+
+                let expDate = '-';
+                let expStyle = 'text-gray-600';
+                
+                if(r[expCol] && typeof r[expCol] === 'string' && r[expCol].length > 8) {
+                    expDate = r[expCol].substring(0, 10);
+                    if(new Date(expDate) < new Date()) {
+                        expStyle = 'text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded';
+                    }
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-rose-50/50 transition border-b border-gray-50">
+                        <td class="p-4 text-gray-600">${r[dateCol]?.substring(0,10) || '-'}</td>
+                        <td class="p-4 font-semibold text-rose-700">${r[assetCol] || '-'}</td>
+                        <td class="p-4 text-gray-600 truncate max-w-[150px]" title="${r[locCol] || r[deptCol] || '-'}">${r[locCol] || r[deptCol] || '-'}</td>
+                        <td class="p-4 ${expStyle}">${expDate}</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-center">${missBadge}</td>
+                        <td class="p-4 text-center text-gray-500 text-xs">${r[inspCol] || '-'}</td>
+                    </tr>
+                `;
             });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Fire_Inspection_Logs_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function copyGASCode() {
-            const code = document.getElementById('gas-code-block').innerText;
-            const textArea = document.createElement("textarea");
-            textArea.value = code;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showToast('คัดลอกโค้ด Google Apps Script เรียบร้อยแล้ว!', 'success');
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let bg = 'bg-slate-800 text-white';
-            if (type === 'success') bg = 'bg-emerald-600 text-white';
-            if (type === 'error') bg = 'bg-red-600 text-white';
-
-            toast.className = `${bg} px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center space-x-2 transition-all duration-300 transform translate-y-2 pointer-events-auto`;
-            toast.innerHTML = `<span>${message}</span>`;
-            
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-4');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
         }
     </script>
 </body>
